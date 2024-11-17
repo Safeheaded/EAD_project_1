@@ -89,11 +89,60 @@ def zad6(df: pd.DataFrame):
     ag = top_1000_per_year_gender.groupby(["Name", "Gender"]).agg({"ratio": "mean"}).reset_index()
     top_1000_male_names = ag[ag["Gender"] == "M"].nlargest(1000, 'ratio')
     top_1000_female_names = ag[ag["Gender"] == "F"].nlargest(1000, 'ratio')
-    print(top_1000_female_names)
+    return top_1000_male_names, top_1000_female_names, top_1000_per_year_gender
+
+def zad7(df: pd.DataFrame):
+    top_males, top_females, all_top_1000 = zad6(df)
+    male_name = 'John'
+    female_name = top_females.iloc[0, 0]
+
+    x = list(set(df['Year']))
+
+    data = df.groupby(["Year", "Name", "Gender"]).agg({"Count": "sum"}).reset_index()
+
+    male_data = data.where(data["Gender"] == "M").dropna()
+    female_data = data.where(data["Gender"] == "F").dropna()
+
+    female_name_data = female_data.where(data["Name"] == female_name).dropna().loc[:, ["Count", "Year"]]
+    male_name_data = male_data.where(data["Name"] == male_name).dropna().loc[:, ["Count", "Year"]]
+
+    all_top_1000 = all_top_1000.reset_index()
+
+    female_popularity = all_top_1000.where(all_top_1000["Gender"] == "F")[['Name', 'ratio', "Year", "Gender"]].where(all_top_1000["Name"] == female_name).dropna().loc[:, ["ratio", "Year"]]
+
+    male_popularity = all_top_1000.where(all_top_1000["Gender"] == "M")[['Name', 'ratio', "Year", "Gender"]].where(all_top_1000["Name"] == male_name).dropna().loc[:, ["ratio", "Year"]]
+
+    # female_name_popularity = all_top_1000.where(all_top_1000['Name' == female_name]).dropna().loc[:, 'ratio']
+    #
+    # print(female_name_popularity)
+
+
+    fig, ax1 = plt.subplots()
+
+    ax1.set_xlabel('Year')
+    ax1.set_ylabel(f'Count', color='tab:blue')
+    ax1.plot(male_name_data["Year"], male_name_data["Count"], color='tab:blue')
+    ax1.tick_params(axis='y')
+    ax1.plot(female_name_data["Year"], female_name_data["Count"], color='tab:red')
+
+    ax2 = ax1.twinx()
+    ax2.set_ylabel(f'Popularity', color='tab:green')
+    ax2.plot(male_popularity["Year"], male_popularity["ratio"], color='tab:green')
+    ax2.tick_params(axis='y')
+    ax2.plot(female_popularity["Year"], female_popularity["ratio"], color='tab:orange')
+    ax1.legend([
+    f"Count of name {male_name}", f"Count of name {female_name}", f"Popularity of name {male_name}", f"Popularity of name {female_name}"
+    ])
+    ax2.legend([
+    f"Popularity of name {male_name}", f"Popularity of name {female_name}"
+    ], loc='upper left')
+
+    fig.tight_layout()
+    plt.show()
 
 def main():
     df = get_txt_dataset()
-    zad5(df)
+    zad7(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
