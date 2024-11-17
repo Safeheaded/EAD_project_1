@@ -65,10 +65,24 @@ def zad5(df: pd.DataFrame):
     print(f'Year with the highest difference in births: {x[np.argmax(ratio)]}')
     print(f'Year with the lowest difference in births: {x[np.argmin(ratio)]}')
 
+def zad6(df: pd.DataFrame):
+    counted_births = df.groupby(["Year"]).agg({"Count": "sum"})
+    counted_births = counted_births.rename(columns={"Count": "General_count"})
+    top_1000_per_year_gender = df.groupby(['Year', 'Gender']).apply(
+        lambda x: x.nlargest(1000, 'Count')
+    ).reset_index(drop=True)
+    top_1000_per_year_gender = top_1000_per_year_gender.merge(counted_births, on=['Year'])
+
+    top_1000_per_year_gender['ratio'] = top_1000_per_year_gender['Count'] / top_1000_per_year_gender['General_count']
+
+    ag = top_1000_per_year_gender.groupby(["Name", "Gender"]).agg({"ratio": "mean"}).reset_index()
+    top_1000_male_names = ag[ag["Gender"] == "M"].nlargest(1000, 'ratio')
+    top_1000_female_names = ag[ag["Gender"] == "F"].nlargest(1000, 'ratio')
+    print(top_1000_female_names)
 
 def main():
     df = get_txt_dataset()
-    zad5(df)
+    zad6(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
