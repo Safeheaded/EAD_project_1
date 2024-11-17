@@ -96,8 +96,6 @@ def zad7(df: pd.DataFrame):
     male_name = 'John'
     female_name = top_females.iloc[0, 0]
 
-    x = list(set(df['Year']))
-
     data = df.groupby(["Year", "Name", "Gender"]).agg({"Count": "sum"}).reset_index()
 
     male_data = data.where(data["Gender"] == "M").dropna()
