@@ -103,8 +103,8 @@ def zad7(df: pd.DataFrame):
     male_data = data.where(data["Gender"] == "M").dropna()
     female_data = data.where(data["Gender"] == "F").dropna()
 
-    female_name_data = female_data.where(data["Name"] == female_name).dropna().loc[:, ["Count", "Year"]]
-    male_name_data = male_data.where(data["Name"] == male_name).dropna().loc[:, ["Count", "Year"]]
+    female_name_data = female_data.where(data["Name"] == female_name).dropna().loc[:, ["Count", "Year"]].reset_index()
+    male_name_data = male_data.where(data["Name"] == male_name).dropna().loc[:, ["Count", "Year"]].reset_index()
 
     all_top_1000 = all_top_1000.reset_index()
 
@@ -112,10 +112,11 @@ def zad7(df: pd.DataFrame):
 
     male_popularity = all_top_1000.where(all_top_1000["Gender"] == "M")[['Name', 'ratio', "Year", "Gender"]].where(all_top_1000["Name"] == male_name).dropna().loc[:, ["ratio", "Year"]]
 
-    # female_name_popularity = all_top_1000.where(all_top_1000['Name' == female_name]).dropna().loc[:, 'ratio']
-    #
-    # print(female_name_popularity)
-
+    years_to_print = [1934, 1980, 2022]
+    print(f"Counts for male name {male_name}:")
+    print(female_name_data.loc[female_name_data["Year"].isin(years_to_print), ["Count", "Year"]])
+    print(f"Counts for female name {female_name}:")
+    print(male_name_data.loc[male_name_data["Year"].isin(years_to_print), ["Count", "Year"]])
 
     fig, ax1 = plt.subplots()
 
