@@ -51,6 +51,7 @@ def zad5(df: pd.DataFrame):
 
     fig, axes = plt.subplots(2, 1)
     axes[0].plot(x, counted_births['Count'])
+    axes[0].legend(['Births per year'])
 
 
     gender_counts = df.groupby(["Year", "Gender"]).agg({"Count": "sum"})
@@ -60,10 +61,20 @@ def zad5(df: pd.DataFrame):
     ratio = female_counts.loc[:, 'Count'] / male_counts.loc[:, 'Count']
 
     axes[1].plot(x, ratio)
+
+    highest_diff_year = x[np.argmax(ratio)] if x[np.argmax(ratio)] > x[np.argmin(ratio)] else x[np.argmin(ratio)]
+
+    closest_to_one_index = (ratio - 1).abs().idxmin()
+    closest_to_one_value = ratio.loc[closest_to_one_index]
+    closest_to_one_year = x[closest_to_one_index]
+
+    axes[1].plot(highest_diff_year, ratio[np.argmax(ratio)], 'ro')
+    axes[1].plot(closest_to_one_year, closest_to_one_value, 'bo')
+    axes[1].legend(['Female to male ratio', 'Highest difference', 'Lowest difference'])
     plt.show()
 
-    print(f'Year with the highest difference in births: {x[np.argmax(ratio)]}')
-    print(f'Year with the lowest difference in births: {x[np.argmin(ratio)]}')
+    print(f'Year with the highest difference in births: {highest_diff_year}')
+    print(f"Value closest to 1: {closest_to_one_value} at index {closest_to_one_index}")
 
 def zad6(df: pd.DataFrame):
     counted_births = df.groupby(["Year"]).agg({"Count": "sum"})
@@ -82,7 +93,7 @@ def zad6(df: pd.DataFrame):
 
 def main():
     df = get_txt_dataset()
-    zad6(df)
+    zad5(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
