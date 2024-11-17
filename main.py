@@ -1,5 +1,7 @@
 import os
 from typing import LiteralString
+import matplotlib.pyplot as plt
+import numpy as np
 
 import pandas as pd
 
@@ -43,9 +45,30 @@ def zad4(df: pd.DataFrame):
 
     print(df)
 
+def zad5(df: pd.DataFrame):
+    counted_births = df.groupby(["Year"]).agg({"Count": "sum"}).reset_index()
+    x = list(set(df['Year']))
+
+    fig, axes = plt.subplots(2, 1)
+    axes[0].plot(x, counted_births['Count'])
+
+
+    gender_counts = df.groupby(["Year", "Gender"]).agg({"Count": "sum"})
+
+    female_counts = gender_counts.loc[(slice(None), 'F'), 'Count'].reset_index()
+    male_counts = gender_counts.loc[(slice(None), 'M'), 'Count'].reset_index()
+    ratio = female_counts.loc[:, 'Count'] / male_counts.loc[:, 'Count']
+
+    axes[1].plot(x, ratio)
+    plt.show()
+
+    print(f'Year with the highest difference in births: {x[np.argmax(ratio)]}')
+    print(f'Year with the lowest difference in births: {x[np.argmin(ratio)]}')
+
+
 def main():
     df = get_txt_dataset()
-    zad4(df)
+    zad5(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
