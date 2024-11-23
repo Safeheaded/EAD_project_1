@@ -1,9 +1,12 @@
 import os
+from cProfile import label
 from typing import LiteralString
 import matplotlib.pyplot as plt
 import numpy as np
 
 import pandas as pd
+from numpy.ma.core import argmax
+
 
 def get_file_paths(directory: str) -> list[str]:
     file_paths: list[str] = list[str]()
@@ -139,12 +142,58 @@ def zad7(df: pd.DataFrame):
     fig.tight_layout()
     plt.show()
 
+def zad8(df: pd.DataFrame):
+    top_males, top_females, all_top_1000 = zad6(df)
+    counted_births = df.groupby(["Year", "Name", "Gender"]).agg({"Count": "sum"})
+    counted_births["total_yearly_population"] = counted_births.groupby(["Year", "Gender"])["Count"].transform('sum')
+
+    top_male_names = top_males['Name'].tolist()
+    top_female_names = top_females['Name'].tolist()
+
+    counted_births_females = counted_births.loc[(slice(None), slice(None), "F"), :]
+    counted_births_males = counted_births.loc[(slice(None), slice(None), "M"), :]
+
+    # Musisz to przefiltrować oddzielnie dla bab i chłopów
+    counted_births_females_filtered = counted_births_females[counted_births_females.index.get_level_values('Name').isin(top_female_names)]
+    counted_births_males_filtered = counted_births_males[counted_births_males.index.get_level_values('Name').isin(top_male_names)]
+
+    counted_births_females_filtered["population_percentage"] = counted_births_females_filtered["Count"] / counted_births_females_filtered["total_yearly_population"]
+    counted_births_males_filtered["population_percentage"] = counted_births_males_filtered["Count"] / counted_births_males_filtered["total_yearly_population"]
+
+    females_aggregated = counted_births_females_filtered.groupby("Year").agg({"population_percentage": "sum"})
+    males_aggregated = counted_births_males_filtered.groupby("Year").agg({"population_percentage": "sum"})
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    plt.plot(females_aggregated.index, females_aggregated["population_percentage"], label="Females")
+    plt.plot(males_aggregated.index, males_aggregated["population_percentage"], label="Males")
+    plt.xlabel("Year")
+    plt.ylabel("Population Percentage")
+    plt.title("Population Percentage of Top Names by Year")
+    print(females_aggregated)
+    females_aggregated["diff"] = abs(females_aggregated.loc[:, "population_percentage"] - males_aggregated.loc[:,"population_percentage"])
+    biggest_diff_year = females_aggregated.reset_index().iloc[argmax(females_aggregated["diff"]), 0]
+
+    min_val = min(females_aggregated["population_percentage"])
+    min_val_male = min(males_aggregated["population_percentage"])
+    min_min = min(min_val, min_val_male)
+
+    # plt.axvline(x=biggest_diff_year, color='r', linestyle='--')
+    plt.scatter(biggest_diff_year, females_aggregated.loc[biggest_diff_year, "population_percentage"], color='r', label="Biggest difference year")
+    plt.scatter(biggest_diff_year, males_aggregated.loc[biggest_diff_year, "population_percentage"], color='r')
+    plt.vlines(x=biggest_diff_year, ymin=min_min, ymax=females_aggregated.loc[biggest_diff_year, "population_percentage"], color='r', linestyle='--')
+    plt.vlines(x=biggest_diff_year, ymin=min_min, ymax=males_aggregated.loc[biggest_diff_year, "population_percentage"], color='r', linestyle='--')
+
+    plt.legend()
+    plt.show()
+
+    print(f"Year with the biggest difference in population percentage: {biggest_diff_year}")
+
 def main():
     df = get_txt_dataset()
-    zad7(df)
+    zad8(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     main()
-
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
