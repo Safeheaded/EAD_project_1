@@ -189,9 +189,88 @@ def zad8(df: pd.DataFrame):
 
     print(f"Year with the biggest difference in population percentage: {biggest_diff_year}")
 
+def zad9(df: pd.DataFrame):
+    df["last_letter"] = df["Name"].str[-1]
+    # print(df[df["Year"] == 1910])
+
+    # df["last_letter"] = pd.factorize(df["last_letter"])[0]
+
+    df_total = df.groupby(["Year", "Gender"]).agg({"Count": "sum"}).rename(columns={"Count": "total_count"}).reset_index()
+    df = df.groupby(["Year", "Gender", "last_letter"]).agg({"Count": "sum"}).rename(columns={"Count": "letter_count"}).reset_index()
+    df = df.merge(df_total, on=["Year", "Gender"])
+    df["ratio"] = df["letter_count"] / df["total_count"]
+
+    # print(df)
+    # print(pd.crosstab(index=df["last_letter"], columns=df["letter_count"], normalize="columns"))
+
+    def parse_yearly_data(year: int) -> pd.DataFrame:
+        data = df.loc[df["Year"] == year]
+        data = data.loc[data["Gender"] == "M"]
+        return data
+
+    year_1910 = parse_yearly_data(1910)
+    year_1970 = parse_yearly_data(1970)
+    year_2023 = parse_yearly_data(2023)
+
+    # print(year_1910)
+
+    all_letters = set(year_1910["last_letter"]).union(set(year_1970["last_letter"]), set(year_2023["last_letter"]))
+    all_letters = sorted(all_letters)
+    year_1910 = year_1910.set_index("last_letter").reindex(all_letters, fill_value=0).reset_index()
+    year_1970 = year_1970.set_index("last_letter").reindex(all_letters, fill_value=0).reset_index()
+    year_2023 = year_2023.set_index("last_letter").reindex(all_letters, fill_value=0).reset_index()
+
+    plt.figure(figsize=(15, 8))
+    bar_width = 0.25
+
+    r1 = range(len(year_1910))
+    r2 = [x + bar_width for x in r1]
+    r3 = [x + bar_width for x in r2]
+
+    plt.bar(r1, year_1910["ratio"], color='b', width=bar_width, edgecolor='grey', label='1910')
+    plt.bar(r2, year_1970["ratio"], color='g', width=bar_width, edgecolor='grey', label='1970')
+    plt.bar(r3, year_2023["ratio"], color='r', width=bar_width, edgecolor='grey', label='2023')
+
+    plt.xlabel('Last Letter', fontweight='bold')
+    plt.ylabel('Ratio', fontweight='bold')
+    plt.xticks([r + bar_width for r in range(len(year_1910))], year_1910["last_letter"])
+
+    plt.title("Ratio of Last Letters for Male Names in 1910, 1970, and 2023")
+    plt.legend()
+    plt.show()
+    # print(year_1910.index)
+    #
+    # year_1910 = pd.crosstab(index=[year_1910["last_letter"], year_1910["Gender"]], columns=[year_1910["letter_count"]], values=year_1910["letter_count"], aggfunc='sum', normalize=True)
+    #
+    # year_1910.loc[(slice(None), "M"), :].plot(kind="bar", stacked=True, figsize=(15, 7))
+
+    # print(df)
+
+    diff = year_2023["ratio"] - year_1910["ratio"]
+    diff = diff.abs()
+    max_diff = diff.idxmax()
+    print(f"Biggest difference in ratio between 1910 and 2023: {year_2023.iloc[max_diff, 0]} with value {diff[max_diff]}")
+    min_diff = diff.idxmin()
+    print(f"Smallest difference in ratio between 1910 and 2023: {year_2023.iloc[min_diff, 0]} with value {diff[min_diff]}")
+    year_2023["diff"] = diff
+    year_2023 = year_2023.sort_values(by="diff", ascending=False)
+
+    top_difference_letters = year_2023.head(3)["last_letter"]
+    top_letters_pop = df[df["Gender"] == "M"].where(df["last_letter"].isin(top_difference_letters)).dropna().groupby(["Year", "last_letter", "ratio"]).agg({"ratio": "sum"}).rename(columns={"ratio": "fin_ratio"})
+    x = list(set(top_letters_pop.index.get_level_values("Year")))
+
+    plt.figure(figsize=(10, 6))
+    for letter in top_difference_letters:
+        plt.plot(x, top_letters_pop.loc[(slice(None), letter, slice(None)),"fin_ratio"], label=f"Ratio of {letter}")
+    plt.xlabel("Year")
+    plt.ylabel("Ratio")
+    plt.title("Popularity of Top Letters by Year")
+    plt.legend()
+    plt.show()
+
 def main():
     df = get_txt_dataset()
-    zad8(df)
+    zad9(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
