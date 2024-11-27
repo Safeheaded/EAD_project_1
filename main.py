@@ -80,24 +80,37 @@ def zad5(df: pd.DataFrame):
     print(f"Value closest to 1: {closest_to_one_value} at index {closest_to_one_index}")
 
 def zad6(df: pd.DataFrame):
-    counted_births = df.groupby(["Year"]).agg({"Count": "sum"})
-    counted_births = counted_births.rename(columns={"Count": "General_count"})
-    top_1000_per_year_gender = df.groupby(['Year', 'Gender']).apply(
-        lambda x: x.nlargest(1000, 'Count')
-    ).reset_index(drop=True)
-    top_1000_per_year_gender = top_1000_per_year_gender.merge(counted_births, on=['Year'])
+    gender_counts = df.groupby(["Year", "Gender"]).agg({"Count": "sum"}).rename(columns={"Count": "Total_count"})
+    # gender_counts = gender_counts.reset_index()
 
-    top_1000_per_year_gender['ratio'] = top_1000_per_year_gender['Count'] / top_1000_per_year_gender['General_count']
+    # female_counts = gender_counts.loc[(slice(None), 'F'), 'Count'].reset_index()
+    # male_counts = gender_counts.loc[(slice(None), 'M'), 'Count'].reset_index()
 
-    ag = top_1000_per_year_gender.groupby(["Name", "Gender"]).agg({"ratio": "mean"}).reset_index()
-    top_1000_male_names = ag[ag["Gender"] == "M"].nlargest(1000, 'ratio')
-    top_1000_female_names = ag[ag["Gender"] == "F"].nlargest(1000, 'ratio')
-    return top_1000_male_names, top_1000_female_names, top_1000_per_year_gender
+    counted = df.groupby(["Year", "Gender", "Name"]).agg({"Count": "sum"}).reset_index()
+    counted = counted
+
+    counted = gender_counts.merge(counted, on=["Year", "Gender"])
+    # print(counted)
+
+    counted["popularity"] = counted["Count"] / counted["Total_count"]
+
+    with_popularity = counted.copy()
+
+    counted = counted.groupby(["Gender", "Name"]).agg({"popularity": "sum"}).reset_index()
+
+
+    females = counted[counted["Gender"] == "F"]
+    males = counted[counted["Gender"] == "M"]
+
+    top_1000_females = females.sort_values(by="popularity", ascending=False).head(1000)
+    top_1000_males = males.sort_values(by="popularity", ascending=False).head(1000)
+
+    return top_1000_males, top_1000_females, with_popularity
 
 def zad7(df: pd.DataFrame):
     top_males, top_females, all_top_1000 = zad6(df)
     male_name = 'John'
-    female_name = top_females.iloc[0, 0]
+    female_name = top_females.iloc[0, 1]
 
     data = df.groupby(["Year", "Name", "Gender"]).agg({"Count": "sum"}).reset_index()
 
@@ -107,11 +120,11 @@ def zad7(df: pd.DataFrame):
     female_name_data = female_data.where(data["Name"] == female_name).dropna().loc[:, ["Count", "Year"]].reset_index()
     male_name_data = male_data.where(data["Name"] == male_name).dropna().loc[:, ["Count", "Year"]].reset_index()
 
-    all_top_1000 = all_top_1000.reset_index()
+    all_top_1000 = all_top_1000
 
-    female_popularity = all_top_1000.where(all_top_1000["Gender"] == "F")[['Name', 'ratio', "Year", "Gender"]].where(all_top_1000["Name"] == female_name).dropna().loc[:, ["ratio", "Year"]]
+    female_popularity = all_top_1000.where(all_top_1000["Gender"] == "F")[['Name', 'popularity', "Year", "Gender"]].where(all_top_1000["Name"] == female_name).dropna().loc[:, ["popularity", "Year"]]
 
-    male_popularity = all_top_1000.where(all_top_1000["Gender"] == "M")[['Name', 'ratio', "Year", "Gender"]].where(all_top_1000["Name"] == male_name).dropna().loc[:, ["ratio", "Year"]]
+    male_popularity = all_top_1000.where(all_top_1000["Gender"] == "M")[['Name', 'popularity', "Year", "Gender"]].where(all_top_1000["Name"] == male_name).dropna().loc[:, ["popularity", "Year"]]
 
     years_to_print = [1934, 1980, 2022]
     print(f"Counts for male name {male_name}:")
@@ -129,9 +142,9 @@ def zad7(df: pd.DataFrame):
 
     ax2 = ax1.twinx()
     ax2.set_ylabel(f'Popularity', color='tab:green')
-    ax2.plot(male_popularity["Year"], male_popularity["ratio"], color='tab:green')
+    ax2.plot(male_popularity["Year"], male_popularity["popularity"], color='tab:green')
     ax2.tick_params(axis='y')
-    ax2.plot(female_popularity["Year"], female_popularity["ratio"], color='tab:orange')
+    ax2.plot(female_popularity["Year"], female_popularity["popularity"], color='tab:orange')
     ax1.legend([
     f"Count of name {male_name}", f"Count of name {female_name}", f"Popularity of name {male_name}", f"Popularity of name {female_name}"
     ])
@@ -268,9 +281,46 @@ def zad9(df: pd.DataFrame):
     plt.legend()
     plt.show()
 
+def zad10(df: pd.DataFrame):
+    top_1000_males, top_1000_females, _ = zad6(df)
+    male_names = top_1000_males["Name"].tolist()
+    female_names = top_1000_females["Name"].tolist()
+    common_names = list(set(male_names) & set(female_names))
+
+    data = df.loc[df["Name"].isin(common_names)]
+
+    data_total_names = data.groupby(["Year", "Name"]).agg({"Count": "sum"}).rename(columns={"Count": "total_count"}).reset_index()
+    data = data.merge(data_total_names, on=["Year", "Name"])
+    data["ratio"] = data["Count"] / data["total_count"]
+
+    # data["shifted_ratio"] = data["ratio"].shift(1)
+
+    first_period = data.loc[data["Year"].between(1880, 1940)]
+
+    first_period_males = first_period[first_period["Gender"] == "M"].groupby(["Name"]).agg({"ratio": "mean"})
+    first_period_females = first_period[first_period["Gender"] == "F"].groupby(["Name"]).agg({"ratio": "mean"})
+
+    # print(pd.crosstab(index=[first_period_males["Name"], first_period_males["Year"]], columns=first_period_males["Year"], values=first_period_males["ratio"], aggfunc='mean'))
+
+    second_period = data.loc[data["Year"].between(2000, 2023)]
+
+    second_period_males = second_period[second_period["Gender"] == "M"].groupby(["Name"]).agg({"ratio": "mean"})
+    second_period_females = second_period[second_period["Gender"] == "F"].groupby(["Name"]).agg({"ratio": "mean"})
+
+    mr = first_period_males.merge(second_period_females, on=["Name"])
+    mr2 = first_period_females.merge(second_period_males, on=["Name"])
+
+    mr["fin"] = (mr["ratio_x"] + mr["ratio_y"]) / 2
+    mr2["fin"] = (mr2["ratio_x"] + mr2["ratio_y"]) / 2
+
+    now_female_name = mr["fin"].sort_values(ascending=False).head(1)
+    now_male_name = mr2["fin"].sort_values(ascending=False).head(1)
+    print(now_female_name)
+    print(now_male_name)
+
 def main():
     df = get_txt_dataset()
-    zad9(df)
+    zad7(df)
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
