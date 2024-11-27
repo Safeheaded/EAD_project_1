@@ -1,4 +1,5 @@
 import os
+import sqlite3
 from cProfile import label
 from typing import LiteralString
 import matplotlib.pyplot as plt
@@ -12,7 +13,8 @@ def get_file_paths(directory: str) -> list[str]:
     file_paths: list[str] = list[str]()
     for root, _, files in os.walk(directory):
         for file in files:
-            file_paths.append(os.path.join(root, file))
+            if file.endswith('.txt'):
+                file_paths.append(os.path.join(root, file))
     return file_paths
 
 def get_txt_dataset() -> pd.DataFrame:
@@ -346,14 +348,23 @@ def zad10(df: pd.DataFrame):
     plt.grid(True)
     plt.legend()
 
-    plt.text(now_female_data["Year"].min(), 0.9, "Imię męskie", fontsize=12, color='blue')
-    plt.text(now_female_data["Year"].min(), 0.1, "Imię żeńskie", fontsize=12, color='red')
+    plt.text(now_female_data["Year"].min(), 0.9, "Imiona męskie", fontsize=12, color='blue')
+    plt.text(now_female_data["Year"].min(), 0.1, "Imiona żeńskie", fontsize=12, color='red')
 
     plt.show()
 
+def zad11():
+    conn = sqlite3.connect("./data/names_pl_2000-23.sqlite")  # połączenie do bazy danych - pliku
+    df = pd.read_sql_query("SELECT * FROM males UNION ALL SELECT * FROM females", conn)
+    df = df.rename(columns={"Imię": "Name", "Liczba": "Count", "Rok": "Year", "Płeć": "Gender"})
+    df['Gender'] = df['Gender'].replace('K', 'F')
+    conn.close()
+
+    print(df)
+
 def main():
     df = get_txt_dataset()
-    zad10(df)
+    zad11()
 
 if __name__ == '__main__':
     main()
