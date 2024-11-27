@@ -295,34 +295,65 @@ def zad10(df: pd.DataFrame):
 
     # data["shifted_ratio"] = data["ratio"].shift(1)
 
-    first_period = data.loc[data["Year"].between(1880, 1940)]
+    first_period = data.loc[data["Year"].between(1880, 1919)]
 
-    first_period_males = first_period[first_period["Gender"] == "M"].groupby(["Name"]).agg({"ratio": "mean"})
-    first_period_females = first_period[first_period["Gender"] == "F"].groupby(["Name"]).agg({"ratio": "mean"})
+    first_period_males = first_period[first_period["Gender"] == "M"]
+    first_period_females = first_period[first_period["Gender"] == "F"]
+
+    first_period_males_grouped = first_period_males.groupby(["Name"]).agg({"ratio": "mean"})
+    first_period_females_grouped = first_period_females.groupby(["Name"]).agg({"ratio": "mean"})
 
     # print(pd.crosstab(index=[first_period_males["Name"], first_period_males["Year"]], columns=first_period_males["Year"], values=first_period_males["ratio"], aggfunc='mean'))
 
-    second_period = data.loc[data["Year"].between(2000, 2023)]
+    second_period = data.loc[data["Year"].between(2001, 2023)]
 
-    second_period_males = second_period[second_period["Gender"] == "M"].groupby(["Name"]).agg({"ratio": "mean"})
-    second_period_females = second_period[second_period["Gender"] == "F"].groupby(["Name"]).agg({"ratio": "mean"})
+    second_period_males = second_period[second_period["Gender"] == "M"]
+    second_period_females = second_period[second_period["Gender"] == "F"]
 
-    mr = first_period_males.merge(second_period_females, on=["Name"])
-    mr2 = first_period_females.merge(second_period_males, on=["Name"])
+    second_period_males_grouped = second_period_males.groupby(["Name"]).agg({"ratio": "mean"})
+    second_period_females_grouped = second_period_females.groupby(["Name"]).agg({"ratio": "mean"})
+
+    mr = first_period_males_grouped.merge(second_period_females_grouped, on=["Name"])
+    mr2 = first_period_females_grouped.merge(second_period_males_grouped, on=["Name"])
 
     mr["fin"] = (mr["ratio_x"] + mr["ratio_y"]) / 2
     mr2["fin"] = (mr2["ratio_x"] + mr2["ratio_y"]) / 2
 
-    now_female_name = mr["fin"].sort_values(ascending=False).head(1)
-    now_male_name = mr2["fin"].sort_values(ascending=False).head(1)
+    now_female_name = mr["fin"].sort_values(ascending=False).head(1).reset_index()["Name"]
+    now_male_name = mr2["fin"].sort_values(ascending=False).head(1).reset_index()["Name"]
+
     print(now_female_name)
     print(now_male_name)
 
+    males = data[data["Gender"] == "M"]
+    females = data[data["Gender"] == "F"]
+
+    females.loc[:, "ratio"] = 1 - females["ratio"]
+
+    comp = males.merge(females, on=["Year", "Name"], how='outer')
+    comp["ratio"] = comp.apply(lambda row: row["ratio_y"] if pd.isna(row["ratio_x"]) else row["ratio_x"], axis=1)
+
+    now_female_data = comp[comp["Name"] == now_female_name[0]]
+    now_male_data = comp[comp["Name"] == now_male_name[0]]
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(now_female_data["Year"], now_female_data["ratio"], marker='o', linestyle='-', label=f"Popularity of name {now_female_name[0]}")
+    plt.plot(now_male_data["Year"], now_male_data["ratio"], marker='o', linestyle='-', label=f"Popularity of name {now_male_name[0]}")
+    plt.axhline(y=0.5, color='gray', linestyle='--')
+    plt.xlabel("Year")
+    plt.ylabel("Ratio")
+    plt.title(f"Change of names popularity across both genders")
+    plt.grid(True)
+    plt.legend()
+
+    plt.text(now_female_data["Year"].min(), 0.9, "Imię męskie", fontsize=12, color='blue')
+    plt.text(now_female_data["Year"].min(), 0.1, "Imię żeńskie", fontsize=12, color='red')
+
+    plt.show()
+
 def main():
     df = get_txt_dataset()
-    zad7(df)
+    zad10(df)
 
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     main()
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
