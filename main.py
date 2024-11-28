@@ -338,6 +338,7 @@ def zad10(df: pd.DataFrame, names_num=1000):
 
 
 def get_changing_names(df, top_1000_females, top_1000_males):
+    # funkcja uzyta w zad10
     data = get_gender_popularity(df, top_1000_females, top_1000_males)
     # data["shifted_ratio"] = data["ratio"].shift(1)
     first_period = data.loc[data["Year"].between(1880, 1919)]
@@ -358,6 +359,7 @@ def get_changing_names(df, top_1000_females, top_1000_males):
 
 
 def prepare_gender_popularity_period(first_period):
+    # funkcja uzyta w zad 11 oraz w funkcji get_changing_names
     first_period_males = first_period[first_period["Gender"] == "M"]
     first_period_females = first_period[first_period["Gender"] == "F"]
     first_period_males_grouped = first_period_males.groupby(["Name"]).agg({"ratio": "mean"})
@@ -366,6 +368,7 @@ def prepare_gender_popularity_period(first_period):
 
 
 def get_gender_popularity(df, top_1000_females, top_1000_males):
+    # funkcja uzyta w zad 11 oraz w funkcji get_changing_names
     male_names = top_1000_males["Name"].tolist()
     female_names = top_1000_females["Name"].tolist()
     common_names = list(set(male_names) & set(female_names))
@@ -427,6 +430,16 @@ def zad11():
 
 def main():
     df = get_txt_dataset()
+    zad2(df)
+    zad3(df)
+    zad4(df)
+    zad5(df)
+    zad6(df)
+    zad7(df)
+    zad8(df)
+    zad9(df)
+    zad10(df)
+
     zad11()
 
 if __name__ == '__main__':
